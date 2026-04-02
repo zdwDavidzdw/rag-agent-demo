@@ -4,6 +4,7 @@ import os
 from langchain.memory import ConversationBufferMemory
 from langchain_community.chat_message_histories import StreamlitChatMessageHistory
 from langchain_community.document_loaders import TextLoader
+from langchain_core.tools import create_retriever_tool
 from langchain_openai import ChatOpenAI
 from langchain_chroma import Chroma
 from langchain_core.prompts import PromptTemplate
