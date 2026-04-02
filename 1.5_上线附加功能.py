@@ -89,22 +89,19 @@ if uploaded_files and retriever:
 # 工具 2：联网搜索
 # ==========================
 def get_search_result(question):
+    # 【关键修复】从正确的包导入 SerpAPIWrapper
     from langchain_community.utilities import SerpAPIWrapper
-    import requests
     import traceback
     try:
         api_key = st.secrets.get("SERPAPI_KEY", "")
         if not api_key:
             return "❌ 错误：未配置 SERPAPI_KEY。请在 Streamlit Secrets 中填写。"
 
-        # 增加超时时间，避免卡死
         search = SerpAPIWrapper(serpapi_api_key=api_key)
         result = search.run(question)
         return result
     except Exception as e:
-        # 打印详细报错到后台（方便你看具体原因）
         st.error(f"🔴 搜索失败详情: {str(e)}")
-        # 返回友好提示给用户
         return f"❌ 联网搜索失败：{str(e)} \n\n建议：检查网络连接或稍后重试。"
 
 
