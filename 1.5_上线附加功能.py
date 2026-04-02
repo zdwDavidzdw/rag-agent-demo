@@ -142,24 +142,33 @@ instructions = """
 
 base_prompt_template = """
 {instructions}
+
 TOOLS:
+------
+
+You have access to the following tools:
 {tools}
 
+To use a tool, please use the following format:
+
 Thought: Do I need to use a tool? Yes
-Action: [tool name]
-Action Input: [input]
-Observation: [result]
+Action: the action to take, should be one of [{tool_names}]
+Action Input: {input}
+Observation: the result of the action
+
+When you have a response to say to the Human, or if you do not need to use a tool, you MUST use the format:
 
 Thought: Do I need to use a tool? No
-Final Answer: [answer]
+Final Answer: [your response here]
 
 Begin!
-Previous conversation:
+
+Previous conversation history:
 {chat_history}
+
 New input: {input}
 {agent_scratchpad}
 """
-
 prompt = PromptTemplate.from_template(base_prompt_template).partial(instructions=instructions)
 
 # ==========================
