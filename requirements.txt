@@ -3,8 +3,7 @@ langchain==0.3.2
 langchain-community
 langchain-openai
 langchain-chroma
-chromadb>=0.5.0  # 【升级】指定高版本Chroma，解决protobuf冲突
-protobuf>=5.26.1  # 【新增】强制安装兼容版本protobuf
-BaichuanTextEmbeddings
+chromadb>=0.5.0
+protobuf>=5.26.1
 requests
 python-dotenv
