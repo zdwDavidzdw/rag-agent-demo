@@ -1,11 +1,10 @@
-streamlit==1.35.0
-langchain==0.3.2
-langchain-community==0.3.1
-langchain-openai==0.3.19
-langchain-chroma==0.2.4
+streamlit>=1.32.0
+langchain==0.2.10
+langchain-community==0.2.9
+langchain-openai==0.1.23
+langchain-chroma==0.1.4
 chromadb==0.4.23
 protobuf==3.20.3
 requests
 python-dotenv
-# 必须添加！
 serpapi==0.1.1
