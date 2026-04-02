@@ -7,4 +7,5 @@ chromadb==0.4.23
 protobuf==3.20.3
 requests
 python-dotenv
-serpapi==0.1.1
+# 【关键修复】替换 serpapi 为 google-search-results
+google-search-results==2.4.2
