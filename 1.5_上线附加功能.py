@@ -193,7 +193,7 @@ llm = ChatOpenAI(
 
 agent = create_react_agent(llm, tools, prompt)
 # 【最小改动3：verbose=False → 关闭思考打印】
-agent_executor = AgentExecutor(agent=agent, tools=tools, memory=memory, verbose=Ture, handle_parsing_errors=True,
+agent_executor = AgentExecutor(agent=agent, tools=tools, memory=memory, handle_parsing_errors=True,
                                max_iterations=5)
 
 # ==========================
