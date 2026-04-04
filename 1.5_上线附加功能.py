@@ -1,3 +1,7 @@
+# 【最小改动 1：加在最顶部，关闭报错】
+import os
+os.environ["LANGCHAIN_TRACING_V2"] = "false"
+
 import streamlit as st
 import tempfile
 import os
@@ -22,13 +26,19 @@ from langchain.agents import Tool
 st.set_page_config(page_title="RAG Agent Demo", layout="wide")
 st.title("📚 RAG + 联网搜索 + 天气查询 Agent")
 
+# 【最小改动 2：简单美化界面】
+st.markdown("""
+<style>
+.stChatMessage { border-radius: 10px; padding: 10px; }
+</style>
+""", unsafe_allow_html=True)
+
 # ==========================
 # 上传文件
 # ==========================
 uploaded_files = st.sidebar.file_uploader("上传 TXT 文档", type=["txt"], accept_multiple_files=True)
 if not uploaded_files:
     st.info("📌 未上传文档，使用联网+天气模式")
-
 
 # ==========================
 # 文档检索器
@@ -55,7 +65,6 @@ def configure_retriever(uploaded_files):
     embeddings = BaichuanTextEmbeddings(api_key=key)
     vectordb = Chroma.from_documents(splits, embeddings)
     return vectordb.as_retriever()
-
 
 retriever = None
 if uploaded_files:
@@ -84,12 +93,10 @@ if uploaded_files and retriever:
     )
     tools.append(tool)
 
-
 # ==========================
 # 工具 2：联网搜索
 # ==========================
 def get_search_result(question):
-    # 【关键修复】从正确的包导入 SerpAPIWrapper
     from langchain_community.utilities import SerpAPIWrapper
     import traceback
     try:
@@ -102,15 +109,13 @@ def get_search_result(question):
         return result
     except Exception as e:
         st.error(f"🔴 搜索失败详情: {str(e)}")
-        return f"❌ 联网搜索失败：{str(e)} \n\n建议：检查网络连接或稍后重试。"
-
+        return f"❌ 联网搜索失败：{str(e)} \\n\\n建议：检查网络连接或稍后重试。"
 
 searchTool = Tool(
     name="get_search_result",
     description="联网获取实时信息、新闻、知识",
     func=get_search_result
 )
-
 
 # ==========================
 # 工具 3：天气查询
@@ -123,7 +128,6 @@ def get_weather(loc):
         return json.dumps(requests.get(url).json(), ensure_ascii=False)
     except:
         return "天气查询失败"
-
 
 weatherTool = Tool(
     name="get_weather",
@@ -188,7 +192,8 @@ llm = ChatOpenAI(
 )
 
 agent = create_react_agent(llm, tools, prompt)
-agent_executor = AgentExecutor(agent=agent, tools=tools, memory=memory, verbose=True, handle_parsing_errors=True,
+# 【最小改动3：verbose=False → 关闭思考打印】
+agent_executor = AgentExecutor(agent=agent, tools=tools, memory=memory, verbose=False, handle_parsing_errors=True,
                                max_iterations=5)
 
 # ==========================
@@ -200,11 +205,12 @@ if user_query:
     st.chat_message("user").write(user_query)
 
     with st.chat_message("assistant"):
-        st_cb = StreamlitCallbackHandler(st.container())
-        config = {"callbacks": [st_cb]}
+        # 【最小改动4：去掉回调，界面干净】
+        # st_cb = StreamlitCallbackHandler(st.container())
+        # config = {"callbacks": [st_cb]}
 
         try:
-            res = agent_executor.invoke({"input": user_query}, config=config)
+            res = agent_executor.invoke({"input": user_query})
             ans = res["output"]
         except:
             ans = f"我无法回答：{user_query}"
