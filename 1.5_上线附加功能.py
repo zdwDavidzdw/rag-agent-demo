@@ -200,7 +200,6 @@ agent_executor = AgentExecutor(agent=agent, tools=tools, memory=memory, handle_p
 # 聊天交互
 # ==========================
 user_query = st.chat_input("输入问题...")
-user_query = st.chat_input("输入问题...")
 if user_query:
     st.session_state.messages.append({"role": "user", "content": user_query})
     st.chat_message("user").write(user_query)
