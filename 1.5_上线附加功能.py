@@ -24,7 +24,7 @@ from langchain.agents import Tool
 # 页面配置
 # ==========================
 st.set_page_config(page_title="RAG Agent Demo", layout="wide")
-st.title("📚 RAG + 联网搜索 + 天气查询 Agent")
+st.title("📚 RAG向量检索 + 联网搜索 + 天气查询 Agent")
 
 # 【最小改动 2：简单美化界面】
 st.markdown("""
