@@ -206,13 +206,17 @@ if user_query:
 
     with st.chat_message("assistant"):
         # 【最小改动4：去掉回调，界面干净】
-        st_cb = StreamlitCallbackHandler(st.container())
-        config = {"callbacks": [st_cb]}
+        # st_cb = StreamlitCallbackHandler(st.container())
+        # config = {"callbacks": [st_cb]}
 
-        try:
-            res = agent_executor.invoke({"input": user_query})
+      try:
+            # 打开回调，显示工具调用
+            st_cb = StreamlitCallbackHandler(st.container(), expand_new_thoughts=False)
+            config = {"callbacks": [st_cb]}
+            
+            res = agent_executor.invoke({"input": user_query}, config=config)
             ans = res["output"]
-        except:
+        except Exception as e:
             ans = f"我无法回答：{user_query}"
 
         st.session_state.messages.append({"role": "assistant", "content": ans})
