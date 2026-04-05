@@ -200,11 +200,13 @@ agent_executor = AgentExecutor(agent=agent, tools=tools, memory=memory, handle_p
 # 聊天交互
 # ==========================
 user_query = st.chat_input("输入问题...")
+user_query = st.chat_input("输入问题...")
 if user_query:
     st.session_state.messages.append({"role": "user", "content": user_query})
     st.chat_message("user").write(user_query)
 
-     with st.chat_message("assistant"):
+    # ✅ 正确缩进：和上面两行对齐，仅缩进4个空格
+    with st.chat_message("assistant"):
         try:
             # 打开回调，显示工具调用
             st_cb = StreamlitCallbackHandler(st.container(), expand_new_thoughts=False)
