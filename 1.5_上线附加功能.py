@@ -216,8 +216,8 @@ if user_query:
             
             res = agent_executor.invoke({"input": user_query}, config=config)
             ans = res["output"]
-        except Exception as e:
-            ans = f"我无法回答：{user_query}"
+    except Exception as e:
+        ans = f"我无法回答：{user_query}"
 
-        st.session_state.messages.append({"role": "assistant", "content": ans})
-        st.write(ans)
+    st.session_state.messages.append({"role": "assistant", "content": ans})
+    st.write(ans)
