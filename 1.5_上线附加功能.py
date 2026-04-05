@@ -210,6 +210,9 @@ if user_query:
         # config = {"callbacks": [st_cb]}
 
         try:
+        #【最小改动4：去掉回调，界面干净】
+        st_cb = StreamlitCallbackHandler(st.container())
+        config = {"callbacks": [st_cb]}
             res = agent_executor.invoke({"input": user_query})
             ans = res["output"]
         except:
