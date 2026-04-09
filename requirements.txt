@@ -12,4 +12,4 @@ pypdf
 python-docx
 pytesseract
 pillow
-opencv-python
+numpy
