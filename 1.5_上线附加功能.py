@@ -36,7 +36,7 @@ from langchain_core.documents import Document
 # 页面配置
 # ==========================
 st.set_page_config(page_title="RAG Agent Demo", layout="wide")
-st.title("📚 多模态 RAG + 联网搜索 + 天气查询 Agent：智能客服，知识库检索")
+st.title("📚 多模态 RAG ：智能客服，知识库检索")
 
 st.markdown("""
 <style>
