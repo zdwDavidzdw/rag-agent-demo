@@ -10,6 +10,7 @@ python-dotenv
 google-search-results==2.4.2
 pypdf
 python-docx
+docx2txt
 pytesseract
 pillow
 numpy
