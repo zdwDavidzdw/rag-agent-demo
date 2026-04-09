@@ -36,7 +36,7 @@ from langchain_core.documents import Document
 # 页面配置
 # ==========================
 st.set_page_config(page_title="RAG Agent Demo", layout="wide")
-st.title("📚 多模态 RAG + 联网搜索 + 天气查询 Agent")
+st.title("📚 多模态 RAG + 联网搜索 + 天气查询 Agent：智能客服，知识库检索")
 
 st.markdown("""
 <style>
@@ -126,7 +126,7 @@ if uploaded_files:
 # ==========================
 if "messages" not in st.session_state:
     st.session_state["messages"] = [
-        {"role": "assistant", "content": "你好！我是多模态RAG智能助手，支持文档、图片、联网、天气查询"}
+        {"role": "assistant", "content": "你好！多模态RAG检索：可以，支持文档、图片、联网、天气查询"}
     ]
 
 for msg in st.session_state.messages:
