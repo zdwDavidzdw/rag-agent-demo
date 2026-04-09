@@ -1,13 +1,13 @@
 # 【最小改动 1：加在最顶部，关闭报错】
 import os
 os.environ["LANGCHAIN_TRACING_V2"] = "false"
+os.environ["PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION"] = "python"
+os.environ["CHROMA_TELEMETRY_ENABLED"] = "False"
 
 import streamlit as st
 import tempfile
-import os
 from langchain.memory import ConversationBufferMemory
 from langchain_community.chat_message_histories import StreamlitChatMessageHistory
-from langchain_community.document_loaders import TextLoader
 from langchain_core.tools import create_retriever_tool
 from langchain_openai import ChatOpenAI
 from langchain_chroma import Chroma
@@ -20,13 +20,21 @@ import requests
 import json
 from langchain.agents import Tool
 
+# ==================== 多模态文档加载依赖 ====================
+from langchain_community.document_loaders import (
+    TextLoader,
+    PyPDFLoader,
+    Docx2txtLoader,
+)
+from paddleocr import PaddleOCR
+import cv2
+
 # ==========================
 # 页面配置
 # ==========================
 st.set_page_config(page_title="RAG Agent Demo", layout="wide")
-st.title("📚 RAG向量检索 + 联网搜索 + 天气查询 Agent")
+st.title("📚 多模态 RAG + 联网搜索 + 天气查询 Agent")
 
-# 【最小改动 2：简单美化界面】
 st.markdown("""
 <style>
 .stChatMessage { border-radius: 10px; padding: 10px; }
@@ -34,27 +42,68 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==========================
-# 上传文件
+# 上传文件（支持多格式）
 # ==========================
-uploaded_files = st.sidebar.file_uploader("上传 TXT 文档", type=["txt"], accept_multiple_files=True)
+uploaded_files = st.sidebar.file_uploader(
+    "上传 TXT / PDF / DOCX / 图片（PNG/JPG）",
+    type=["txt", "pdf", "docx", "png", "jpg", "jpeg"],
+    accept_multiple_files=True
+)
 if not uploaded_files:
     st.info("📌 未上传文档，使用联网+天气模式")
 
 # ==========================
-# 文档检索器
+# 图片 OCR 工具
+# ==========================
+@st.cache_resource
+def get_ocr():
+    return PaddleOCR(use_angle_cls=True, lang="ch", use_gpu=False, show_log=False)
+
+ocr = get_ocr()
+
+def extract_text_from_image(image_path):
+    result = ocr.ocr(image_path, cls=True)
+    text = ""
+    for line in result:
+        for word in line:
+            text += word[1][0] + "\n"
+    return text if text else "无法识别图片文字"
+
+# ==========================
+# 文档检索器（多模态）
 # ==========================
 @st.cache_resource(ttl="1h")
 def configure_retriever(uploaded_files):
     if not uploaded_files:
         return None
+
     docs = []
     temp_dir = tempfile.TemporaryDirectory()
+
     for file in uploaded_files:
-        temp_filepath = os.path.join(temp_dir.name, file.name)
-        with open(temp_filepath, "wb") as f:
+        temp_path = os.path.join(temp_dir.name, file.name)
+        with open(temp_path, "wb") as f:
             f.write(file.getvalue())
-        loader = TextLoader(temp_filepath, encoding="utf-8")
-        docs.extend(loader.load())
+
+        try:
+            if file.name.endswith(".txt"):
+                loader = TextLoader(temp_path, encoding="utf-8")
+                docs.extend(loader.load())
+
+            elif file.name.endswith(".pdf"):
+                loader = PyPDFLoader(temp_path)
+                docs.extend(loader.load_and_split())
+
+            elif file.name.endswith(".docx"):
+                loader = Docx2txtLoader(temp_path)
+                docs.extend(loader.load())
+
+            elif file.name.endswith((".png", ".jpg", ".jpeg")):
+                text = extract_text_from_image(temp_path)
+                docs.append({"page_content": text, "metadata": {"source": file.name}})
+
+        except Exception as e:
+            st.warning(f"文件 {file.name} 读取失败：{str(e)}")
 
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=300, chunk_overlap=50)
     splits = text_splitter.split_documents(docs)
@@ -75,7 +124,7 @@ if uploaded_files:
 # ==========================
 if "messages" not in st.session_state:
     st.session_state["messages"] = [
-        {"role": "assistant", "content": "你好！我是RAG智能助手，支持文档检索、联网搜索、天气查询"}
+        {"role": "assistant", "content": "你好！我是多模态RAG智能助手，支持文档、图片、联网、天气查询"}
     ]
 
 for msg in st.session_state.messages:
@@ -89,7 +138,7 @@ if uploaded_files and retriever:
     tool = create_retriever_tool(
         retriever=retriever,
         name="文档检索",
-        description="根据文档内容回答问题"
+        description="根据文档、图片内容回答问题"
     )
     tools.append(tool)
 
@@ -98,18 +147,14 @@ if uploaded_files and retriever:
 # ==========================
 def get_search_result(question):
     from langchain_community.utilities import SerpAPIWrapper
-    import traceback
     try:
         api_key = st.secrets.get("SERPAPI_KEY", "")
         if not api_key:
-            return "❌ 错误：未配置 SERPAPI_KEY。请在 Streamlit Secrets 中填写。"
-
+            return "❌ 错误：未配置 SERPAPI_KEY。"
         search = SerpAPIWrapper(serpapi_api_key=api_key)
-        result = search.run(question)
-        return result
+        return search.run(question)
     except Exception as e:
-        st.error(f"🔴 搜索失败详情: {str(e)}")
-        return f"❌ 联网搜索失败：{str(e)} \\n\\n建议：检查网络连接或稍后重试。"
+        return f"❌ 联网搜索失败：{str(e)}"
 
 searchTool = Tool(
     name="get_search_result",
@@ -145,7 +190,7 @@ memory = ConversationBufferMemory(chat_memory=msgs, return_messages=True, memory
                                   output_key="output")
 
 instructions = """
-你是具备文档检索、联网搜索、天气查询能力的智能助手。
+你是具备文档检索、图片检索、联网搜索、天气查询能力的智能助手。
 有文档优先查文档；无文档可联网；问天气直接调用天气工具。
 不知道就说不知道，不编造。
 """
@@ -192,7 +237,6 @@ llm = ChatOpenAI(
 )
 
 agent = create_react_agent(llm, tools, prompt)
-# 【最小改动3：verbose=False → 关闭思考打印】
 agent_executor = AgentExecutor(agent=agent, tools=tools, memory=memory, handle_parsing_errors=True,
                                max_iterations=5)
 
@@ -204,13 +248,10 @@ if user_query:
     st.session_state.messages.append({"role": "user", "content": user_query})
     st.chat_message("user").write(user_query)
 
-    # ✅ 正确缩进：和上面两行对齐，仅缩进4个空格
     with st.chat_message("assistant"):
         try:
-            # 打开回调，显示工具调用
             st_cb = StreamlitCallbackHandler(st.container(), expand_new_thoughts=False)
             config = {"callbacks": [st_cb]}
-            
             res = agent_executor.invoke({"input": user_query}, config=config)
             ans = res["output"]
         except Exception as e:
