@@ -26,11 +26,11 @@ from langchain_community.document_loaders import (
     PyPDFLoader,
     Docx2txtLoader,
 )
-# 【修复】用 pytesseract 替代 PaddleOCR，彻底解决初始化冲突
+# 【修复】纯 PIL + pytesseract，彻底移除 OpenCV，零系统依赖
 import pytesseract
 from PIL import Image
-import cv2
 import numpy as np
+from langchain_core.documents import Document
 
 # ==========================
 # 页面配置
@@ -56,7 +56,7 @@ if not uploaded_files:
     st.info("📌 未上传文档，使用联网+天气模式")
 
 # ==========================
-# 图片 OCR 工具（轻量无冲突版）
+# 图片 OCR 工具（纯 PIL 无 OpenCV 版）
 # ==========================
 @st.cache_resource(ttl="1h")  # 缓存OCR，避免重复加载
 def get_ocr():
@@ -64,9 +64,9 @@ def get_ocr():
 
 def extract_text_from_image(image_path):
     ocr = get_ocr()
-    # 图片预处理（提升识别准确率）
-    img = cv2.imread(image_path)
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    # 纯 PIL 图片预处理（替代 OpenCV，零系统依赖）
+    img = Image.open(image_path)
+    img = img.convert("RGB")  # 统一色彩空间，提升识别准确率
     # 中文+英文识别，适配你的场景
     text = ocr.image_to_string(img, lang='chi_sim+eng')
     return text if text.strip() else "无法识别图片文字"
@@ -102,7 +102,6 @@ def configure_retriever(uploaded_files):
 
             elif file.name.endswith((".png", ".jpg", ".jpeg")):
                 text = extract_text_from_image(temp_path)
-                from langchain_core.documents import Document
                 docs.append(Document(page_content=text, metadata={"source": file.name}))
 
         except Exception as e:
